@@ -46,13 +46,6 @@ def put_optical_flow_arrows_on_image(image, optical_flow, threshold=2.0):
     return image
 
 
-# img = cv2.imread("./tube_img/1.jpg", cv2.IMREAD_GRAYSCALE)
-# apply mask
-# img = cv2.circle(img, (312, 235), 40, (0, 0, 0), -1)
-# cv2.imshow('img', img)
-# cv2.waitKey()
-# print(img.shape)
-
 def generate_mask():
     '''
     this funciton generate mask to cover the center of the image, which is the tube top, so that the light change
@@ -73,37 +66,6 @@ def generate_mask():
             elif (xv[i,j] - center[0])**2 + (yv[i,j] - center[1])**2 > r2**2:
                 mask[i,j] = 0
     return mask
-
-# def tube_points():
-#     Height = 200
-#     Radius = 37
-#     f = 250
-
-
-#     center = (312, 235)
-
-#     x = np.mgrid[0:640]
-#     y = np.mgrid[0:480]
-#     xv, yv = np.meshgrid(x, y)
-#     xv = xv.reshape((-1,1))
-#     yv = yv.reshape((-1,1))
-#     # print(xv.shape, yv.shape)
-#     r = np.sqrt((xv - center[0])**2 + (yv - center[1])**2)
-#     xt = Radius * (xv - center[0]) / r
-#     yt = Radius * (yv - center[1]) / r
-#     zt = Radius * f / r
-#     zt = zt - np.min(zt)
-#     xyzt = np.ndarray.tolist(np.dstack((xt,yt,zt)).reshape((-1,3)))
-#     print(len(xyzt), len(xyzt[0]))
-
-#     for i in range(len(xyzt)-1,-1,-1):
-#         if (xv[i] - center[0])**2 + (yv[i] - center[1])**2 < 40**2:
-#             xyzt.pop(i)
-
-#     # np.savetxt("xyzt.csv", xyzt, delimiter=",")
-#     return xyzt
-
-
 
 def magnify_field():
 
@@ -172,6 +134,7 @@ def curl(flow):
     return np.sum(np.gradient(flow[:, :, 1],axis=1) - np.gradient(flow[:, :, 0],axis=0))
 
 def move_(div, cur):
+    # change treshhold to change sensitivity
     if div >= 8000:
         return 1
     elif div <= -8000:
@@ -212,7 +175,7 @@ if __name__ == "__main__":
                       cuda=False)  # cuda=True if using opencv cuda
 
     # this command in terminal will list all the video devices
-    # v4l2-ctl --list-devices 
+    # v4l2-ctl --list-devices
     usb_list = subprocess.run(["v4l2-ctl","--list-devices"])
     print("The exit code was: %d" % usb_list.returncode)
     cap2 = cv2.VideoCapture(2)
@@ -237,7 +200,7 @@ if __name__ == "__main__":
     print(j)
     j = [-3.1191824118243616, -1.5033019224749964, -1.9925110975848597, -1.2189400831805628, 1.5544813871383667, -1.5421856085406702]
     rob.movej(j, acc=a, vel=v)
-    time.sleep(3)
+    time.sleep(2)
 
     print("init done")
     input('Press enter to continue\n')
@@ -262,7 +225,7 @@ if __name__ == "__main__":
             arrows = put_optical_flow_arrows_on_image(
                 cv2.cvtColor(img,cv2.COLOR_GRAY2BGR), flow[15:-15, 15:-15, :])
             cv2.imshow('arrows', arrows)
-            # cv2.imshow('img', img)
+            cv2.imshow('img', img)
 
             k = cv2.waitKey(10)
             if k & 0xFF == ord('q'):
@@ -317,7 +280,7 @@ if __name__ == "__main__":
     # thread.join()
     cv2.destroyAllWindows()
     cap2.release()
-    # rob.close()
+    rob.close()
     print("bye~")
 
 
