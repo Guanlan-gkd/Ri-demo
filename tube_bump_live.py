@@ -6,8 +6,6 @@ import time
 import urx
 import logging
 import subprocess
-import os
-print(os.__version__)
 
 def put_optical_flow_arrows_on_image(image, optical_flow, threshold=4.0):
     # Don't affect original image
@@ -44,59 +42,6 @@ def put_optical_flow_arrows_on_image(image, optical_flow, threshold=4.0):
                         tipLength=.3)
     return image
 
-def generate_mask():
-    '''
-    this funciton generate mask to cover the center of the image, which is the tube top, so that the light change
-    in that area will not affect the dis optical flow tracking.
-    '''
-    center = (325, 258)
-    r1 = 40
-    r2 = 320
-    x = np.mgrid[0:640]
-    y = np.mgrid[0:480]
-    xv, yv = np.meshgrid(x, y)
-    mask = np.ones_like(xv)
-    print(mask.shape)
-    for i in range(mask.shape[0]):
-        for j in range(mask.shape[1]):
-            if (xv[i,j] - center[0])**2 + (yv[i,j] - center[1])**2 < r1**2:
-                mask[i,j] = 0
-            elif (xv[i,j] - center[0])**2 + (yv[i,j] - center[1])**2 > r2**2:
-                mask[i,j] = 0
-    return mask
-
-def tube_points():
-    '''
-    this function generate the tube points in the 3D space. used for the 3D visualization.
-    '''
-    Height = 150
-    Radius = 37
-    f = 250
-
-
-    center = (325, 258)
-
-    x = np.mgrid[0:640]
-    y = np.mgrid[0:480]
-    xv, yv = np.meshgrid(x, y)
-    xv = xv.reshape((-1,1))
-    yv = yv.reshape((-1,1))
-    # print(xv.shape, yv.shape)
-    r = np.sqrt((xv - center[0])**2 + (yv - center[1])**2)
-    xt = Radius * (xv - center[0]) / r
-    yt = Radius * (yv - center[1]) / r
-    zt = Radius * f / r
-    zt = zt - np.min(zt)
-    xyzt = np.dstack((xt,yt,zt)).reshape((-1,3))
-    print(xyzt.shape)
-
-    for i in range(xyzt.shape[0]):
-        if (xv[i] - center[0])**2 + (yv[i] - center[1])**2 < 40**2:
-            xyzt[i] = [0,0,0]
-
-    # np.savetxt("xyzt.csv", xyzt, delimiter=",")
-    return xyzt
-
 def divergence(flow):
     # divergence = F(x)/dx + F(y)/dy
     return np.sum(np.gradient(flow[:, :, 0],axis=1) + np.gradient(flow[:, :, 1],axis=0))
@@ -104,37 +49,7 @@ def divergence(flow):
 def curl(flow):
     # curl = F(y)/dx - F(x)/dy
     return np.sum(np.gradient(flow[:, :, 1],axis=1) - np.gradient(flow[:, :, 0],axis=0))
-
-def magnify_field():
-    '''
-    this function generate a filed which later will be used to magnify the optical flow magnitude to compensate 
-    the small magnitude in the tube center due to projection view. The closer to center on image means the further from the camera,
-    therefore the larger the magnitude.
-    '''
-    center = (325, 258)
-    x = np.mgrid[0:640]
-    y = np.mgrid[0:480]
-    xv, yv = np.meshgrid(x, y)
-    r = np.sqrt((xv - center[0])**2 + (yv - center[1])**2)
-    m = np.nan_to_num(np.ones_like(r) / np.power(r, 1) * np.power(400, 1))
     
-    return m
-    # print(xv.shape, yv.shape)
-
-mask = generate_mask()
-
-# img = cv2.imread('./tuberaw/1.jpg')
-# img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-# img = (img * mask).astype('uint8')
-# cv2.imshow('img', img)
-# cv2.waitKey(0)
-
-m = magnify_field()
-# the magnify field is also masked
-m = mask * m
-
-
-
 def bump_move(cX,cY,move_dis = 0.05):
     cX = cX - 325
     cY = cY - 258
@@ -145,14 +60,13 @@ def bump_move(cX,cY,move_dis = 0.05):
     disYtran = (disX + disY) * 0.707
     return round(disXtran,4), round(disYtran,4)
 
-# xyz_tube = tube_points()
-# xyz_len = xyz_tube.shape[0]
-mask = generate_mask()
-m = magnify_field()
+with open('pts.npy', 'rb') as f:
+    tube_points = np.load(f)
+    img_points = np.load(f)
+    img2tube = np.load(f)
+    mask = np.load(f)
+    m = np.load(f)
 m = mask * m
-# tube_points, img_points, img2tube = get_point()
-
-print("init done")
 
 if __name__ == "__main__":
 
