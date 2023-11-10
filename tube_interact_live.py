@@ -55,7 +55,7 @@ def curl(flow):
     return np.sum(np.gradient(flow[:, :, 1],axis=1) - np.gradient(flow[:, :, 0],axis=0))
 
 def move_(div, cur):
-    # change treshhold to change sensitivity
+    # change treshold to change sensitivity
     if div >= 8000:
         return 1
     elif div <= -8000:
