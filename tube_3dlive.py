@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-import src.utils as utils
 from src.tracker import Tracker
 import open3d as o3d
 import time
