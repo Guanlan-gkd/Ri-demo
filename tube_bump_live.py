@@ -42,14 +42,6 @@ def put_optical_flow_arrows_on_image(image, optical_flow, threshold=4.0):
                         tipLength=.3)
     return image
 
-def divergence(flow):
-    # divergence = F(x)/dx + F(y)/dy
-    return np.sum(np.gradient(flow[:, :, 0],axis=1) + np.gradient(flow[:, :, 1],axis=0))
-
-def curl(flow):
-    # curl = F(y)/dx - F(x)/dy
-    return np.sum(np.gradient(flow[:, :, 1],axis=1) - np.gradient(flow[:, :, 0],axis=0))
-    
 def bump_move(cX,cY,move_dis = 0.05):
     cX = cX - 325
     cY = cY - 258
