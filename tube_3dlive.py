@@ -58,138 +58,15 @@ def put_optical_flow_arrows_on_image(image, optical_flow, threshold=2.0):
                         tipLength=.3)
     return image
 
+with open('pts.npy', 'rb') as f:
+    tube_points = np.load(f)
+    img_points = np.load(f)
+    img2tube = np.load(f)
+    mask = np.load(f)
+    m = np.load(f)
 
-# img = cv2.imread("./tube_img/1.jpg", cv2.IMREAD_GRAYSCALE)
-# apply mask
-# img = cv2.circle(img, (312, 235), 40, (0, 0, 0), -1)
-# cv2.imshow('img', img)
-# cv2.waitKey()
-# print(img.shape)
-
-def generate_mask():
-    '''
-    this funciton generate mask to cover the center of the image, which is the tube top, so that the light change
-    in that area will not affect the dis optical flow tracking.
-    '''
-    center = (325, 258)
-    r1 = 40
-    r2 = 320
-    x = np.mgrid[0:640]
-    y = np.mgrid[0:480]
-    xv, yv = np.meshgrid(x, y)
-    mask = np.ones_like(xv)
-    print(mask.shape)
-    for i in range(mask.shape[0]):
-        for j in range(mask.shape[1]):
-            if (xv[i,j] - center[0])**2 + (yv[i,j] - center[1])**2 < r1**2:
-                mask[i,j] = 0
-            elif (xv[i,j] - center[0])**2 + (yv[i,j] - center[1])**2 > r2**2:
-                mask[i,j] = 0
-    return mask
-
-# def tube_points():
-#     Height = 200
-#     Radius = 37
-#     f = 250
-
-
-#     center = (312, 235)
-
-#     x = np.mgrid[0:640]
-#     y = np.mgrid[0:480]
-#     xv, yv = np.meshgrid(x, y)
-#     xv = xv.reshape((-1,1))
-#     yv = yv.reshape((-1,1))
-#     # print(xv.shape, yv.shape)
-#     r = np.sqrt((xv - center[0])**2 + (yv - center[1])**2)
-#     xt = Radius * (xv - center[0]) / r
-#     yt = Radius * (yv - center[1]) / r
-#     zt = Radius * f / r
-#     zt = zt - np.min(zt)
-#     xyzt = np.ndarray.tolist(np.dstack((xt,yt,zt)).reshape((-1,3)))
-#     print(len(xyzt), len(xyzt[0]))
-
-#     for i in range(len(xyzt)-1,-1,-1):
-#         if (xv[i] - center[0])**2 + (yv[i] - center[1])**2 < 40**2:
-#             xyzt.pop(i)
-
-#     # np.savetxt("xyzt.csv", xyzt, delimiter=",")
-#     return xyzt
-
-
-
-def magnify_field():
-    '''
-    this function generate a filed which later will be used to magnify the optical flow magnitude to compensate 
-    the small magnitude in the tube center due to projection view. The closer to center on image means the further from the camera,
-    therefore the larger the magnitude.
-    '''
-    center = (325, 258)
-    x = np.mgrid[0:640]
-    y = np.mgrid[0:480]
-    xv, yv = np.meshgrid(x, y)
-    r = np.sqrt((xv - center[0])**2 + (yv - center[1])**2)
-    m = np.nan_to_num(np.ones_like(r) / np.power(r, 1) * np.power(400, 1))
-    
-    return m
-    # print(xv.shape, yv.shape)
-
-def get_point(density_r = 500, density_h = 40):
-    '''
-    this function generate interpolated 3d points it returns 2 arrays: tube_points and img_points
-    img_points is the projection of tube_points on the image plane
-    density_r and _h  controls the number of points generated (_r * _h)
-    '''
-    Height = 150
-    Radius = 37
-    # generate tube_points
-    h = np.mgrid[0:Height:density_h*1j]
-    rad = np.mgrid[0:2*np.pi:density_r*1j]
-    x = np.cos(rad) * Radius
-    y = np.sin(rad) * Radius 
-    x1 = np.repeat(x, h.shape[0]).reshape((-1,1))
-    y1 = np.repeat(y, h.shape[0]).reshape((-1,1))
-    h1 = np.tile(h, (x.shape[0],1)).reshape((-1,1))
-    # print("x1", x1.shape)
-    # print("y1", y1.shape)
-    # print("h1", h1.shape)
-    tube_points = np.stack((x1, y1, h1), axis=1).reshape((-1,3)) # tube_points is the 3d points
-    print("tube_points", tube_points.shape)
-    
-    f = 200
-    center = (325, 258)
-    img_rad = np.repeat(rad, h.shape[0]).reshape((-1,1))
-    img_radius = abs((f * Radius / (h1+26))).astype('int')
-    # print("img radius", img_radius.shape)
-    img_x = np.cos(img_rad) * img_radius + center[0]
-    img_y = np.sin(img_rad) * img_radius + center[1]
-    # print(img_x.shape, img_y.shape)
-    img_points = np.zeros((480,640))
-    img2tube = np.zeros((480,640,3))
-    for i in range(img_x.shape[0]):
-        if 0 < img_y[i] < 480 and 0 < img_x[i] < 640:
-            img_points[int(img_y[i]), int(img_x[i])] = 1
-            img2tube[int(img_y[i]), int(img_x[i]), :] = tube_points[i,:]
-    # cv2.imshow("img_point1", img_points)
-    
-    # cv2.waitKey()
-    # cv2.destroyAllWindows()
-    # cv2.imwrite("img_points.png", (img_points*255).astype('uint8'))
-
-    return tube_points, img_points, img2tube
-
-
-# xyz_tube = tube_points()
-# xyz_len = xyz_tube.shape[0]
-mask = generate_mask()
-m = magnify_field()
 m = mask * m
-# np.savetxt("mask.csv", mask, delimiter=",")
-# np.savetxt("m.csv", m, delimiter=",")
-tube_points, img_points, img2tube = get_point()
 o3d_flag = True
-
-
 
 print("init done")
 
